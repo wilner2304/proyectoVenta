@@ -3,7 +3,7 @@ from config.conexion import conexion
 from fpdf import FPDF
 app=Flask(__name__)
 
-app.secret_key='miclave'
+app.secret_key='miclave123'
 
 def mostrarTodo():
     cursor=conexion.cursor()
