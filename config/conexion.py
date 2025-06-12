@@ -1,9 +1,11 @@
-
+from dotenv import load_dotenv
+import os
 import mysql.connector
-conexion=mysql.connector.connect(
-    host="bjg5uhcyuxylvxeutujx-mysql.services.clever-cloud.com",
-    user="uaw663g6i5nopvgj",
-    password="tc0NxjK8ungZPOhsWPBD",
-    database="bjg5uhcyuxylvxeutujx"
-)
 
+load_dotenv()
+conexion = mysql.connector.connect(
+    host=os.getenv('DB_HOST'),
+    user=os.getenv('DB_USER'),
+    password=os.getenv('DB_PASSWORD'),
+    database=os.getenv('DB_NAME')
+)

@@ -1,6 +1,9 @@
+from functools import wraps
 from flask import Flask, render_template,request,redirect,session,make_response
 from config.conexion import conexion
 from fpdf import FPDF
+from werkzeug.security import generate_password_hash,check_password_hash
+
 app=Flask(__name__)
 
 app.secret_key='miclave123'
@@ -19,6 +22,16 @@ def mostrarCliente(id):
     datos=cursor.fetchone()
     return datos
 
+#usaremos el decorador para proteger nuestras rutas
+#en cada función que tiene ruta lo usaremos para proteger
+#solo los usuarios que esten logueados y usamos @login_required
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'usuario' not in session:
+            return redirect('/login')
+        return f(*args, **kwargs)
+    return decorated_function
 @app.route('/')
 def index():
     if 'usuario' in session:
@@ -28,6 +41,7 @@ def index():
 
 
 @app.route('/registro', methods=['post','get'])
+@login_required
 def registro():
     nombre=request.form['txtnombre']
     nit=request.form['txtnit']
@@ -40,6 +54,7 @@ def registro():
     return render_template('formulario.html',mostrar=mostrar)
 
 @app.route('/actualizar_cliente',methods=['post'])
+@login_required
 def actualizar_cliente():
     id=request.form['txtid']
     nombre=request.form['txtnombre']
@@ -52,6 +67,7 @@ def actualizar_cliente():
     return redirect('/')
 
 @app.route('/actualizar/<id>')
+@login_required
 def actualizar(id):
     cursor=conexion.cursor()
     sql="select * from tbcliente where id_cliente=%s"
@@ -61,6 +77,7 @@ def actualizar(id):
     return render_template('actualizar.html',dato=dato)
 
 @app.route('/eliminar/<id>')
+@login_required
 def eliminar(id):
     cursor=conexion.cursor()
     sql="delete  from tbcliente where id_cliente=%s"
@@ -70,12 +87,14 @@ def eliminar(id):
     return redirect('/')
 
 @app.route('/comprar/<id>')
+@login_required
 def comprar(id):
     datos=mostrarCliente(id)
     return render_template('comprar.html',id=id,datos=datos)
 
 
 @app.route('/comprar', methods=['post'])
+@login_required
 def insertarComprar():
     id=request.form['txtid']
     producto=request.form['txtproducto']
@@ -91,6 +110,7 @@ def insertarComprar():
     return redirect('/')
 
 @app.route('/vercompras/<id>',methods=['GET'])
+@login_required
 def vercompras(id):
     cursor=conexion.cursor()
     sql="Select * from tbcompra where tbcliente_id_cliente=%s"
@@ -99,6 +119,7 @@ def vercompras(id):
     return render_template('vercompras.html',datos=datos)
 
 @app.route('/buscar', methods=['GET'])
+@login_required
 def buscar():
     buscar=request.args.get('txtbuscar')
     cursor=conexion.cursor()
@@ -108,6 +129,7 @@ def buscar():
     return render_template('formulario.html',mostrar=mostrar)
 
 @app.route('/login', methods=['GET','POST'])
+
 def login():
     mensaje=''
     if request.method=='POST':
@@ -115,14 +137,14 @@ def login():
         clave=request.form['txtclave']
 
         cursor=conexion.cursor()
-        sql='Select * from tbusuario where user=%s AND clave =%s'
-        cursor.execute(sql,(user,clave))
+        sql='Select * from tbusuario where user=%s'
+        cursor.execute(sql,(user,))
         usuario=cursor.fetchone()
         cursor.close()
 
-        if usuario:
+        if usuario and check_password_hash(usuario[2], clave):
             session['usuario']=usuario[1]
-            session['clave']=usuario[3]
+            session['rol']=usuario[3]
             return redirect('/')
         else:
             mensaje="Usuario o contraseña incorrecto"
@@ -135,6 +157,7 @@ def logout():
 
 
 @app.route('/reporte/<id>')
+@login_required
 def generar_pdf(id):
     cursor = conexion.cursor()
 
@@ -187,6 +210,34 @@ def generar_pdf(id):
     response.headers['Content-Type'] = 'application/pdf'
     response.headers['Content-Disposition'] = 'inline; filename=reporte_compras.pdf'
     return response
+
+#creamos las funciones para añadir usuario nuevos.
+@app.route('/usuarios')
+@login_required
+def usuarios():
+    return render_template('usuarios.html')
+
+@app.route('/insertar_usuario', methods=['POST'])
+
+def insertar_usuario():
+    user = request.form['txtuser']
+    clave = request.form['txtclave']
+    claveRepetir = request.form['txtclaveRepetir']
+    rol=request.form['txtrol']
+    hash_clave=generate_password_hash(clave)
+    if clave == claveRepetir:       
+         cursor = conexion.cursor()
+         sql = "INSERT INTO tbusuario (user, clave,rol) VALUES (%s,%s, %s)"
+         cursor.execute(sql, (user, hash_clave,rol))
+         conexion.commit()
+         cursor.close()
+         
+    else:
+        return render_template('usuarios.html', mensaje="Las contraseñas no coinciden")
+    
+    
+
+    return redirect('/logout')
 
 
 if __name__=='__main__':

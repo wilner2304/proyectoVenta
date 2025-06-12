@@ -59,3 +59,9 @@ label{
     display: inline-block;
     
 }
+.img_login{
+    width: 35px;
+}
+.img_login:hover{
+    opacity: 0.5;
+}

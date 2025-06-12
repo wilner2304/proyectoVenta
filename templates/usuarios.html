@@ -1,0 +1,30 @@
+<!-- templates/usuarios.html -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="../static/formulario.css">
+    <title>Registro de Usuario</title>
+</head>
+<body>
+    <h1>Registrar nuevo usuario</h1>
+    <form method="POST" action="/insertar_usuario">
+        <label for="txtuser">Usuario:</label><br>
+        <input type="text" id="txtuser" name="txtuser" required><br><br>
+
+        <label for="txtclave">Contraseña:</label><br>
+        <input type="password" id="txtclave" name="txtclave" required><br><br>
+        <label for="txtclaveRepetir">Repetir Contraseña:</label><br>
+        <input type="password" id="txtclaveRepetir" name="txtclaveRepetir" required><br><br>
+       <label for="txtrol">ROL:</label><br>
+       <select name="txtrol">
+        <option value="root" >ROOT</option>
+        <option value="admin">ADMIN</option>
+       </select><br><br>
+       {% if mensaje %}
+       <p style="color: red;">{{mensaje}}</p>
+       {% endif %}
+        <input type="submit" value="Registrar">
+    </form>
+</body>
+</html>
